@@ -1,6 +1,7 @@
 # Optimized Crc File Calculator
 
-This repository is used to host a command line tool for generating CRC values for all *.cs files in a set of directories
+This repository is used to host a small (less than 300 lines of code) 
+command line tool for generating CRC values for all *.cs files in a set of directories
 (specified as command line arguments).
 
 For example (assuming you have http://github.com:ayende/ravendb downloaded to d:\ravendb), you can run it using:
