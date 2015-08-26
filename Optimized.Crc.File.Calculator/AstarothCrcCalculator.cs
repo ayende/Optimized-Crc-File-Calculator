@@ -20,9 +20,10 @@ namespace Optimized.Crc.File.Calculator
         static void Main(string[] args)
         {
             BufferPool.GetBuffer(10000);
-            // queues for the various actors
-            var crcComputationWork = new BlockingCollection<CrcComputationWork>();
-            var readDirectoryWork = new Queue<ReadDirectoryWork>();
+			// single threaded collection, we only use a single thread here
+			var readDirectoryWork = new Queue<ReadDirectoryWork>();
+			// queues for the various actors
+			var crcComputationWork = new BlockingCollection<CrcComputationWork>();
             var readFileWork = new BlockingCollection<ReadFileWork>();
 
             SpinCrcComputations(crcComputationWork);
