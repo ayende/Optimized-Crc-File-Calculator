@@ -52,7 +52,7 @@ namespace Optimized.Crc.File.Calculator
                 while (readDirectoryWork.Count > 0)
                 {
                     var work = readDirectoryWork.Dequeue();
-                    foreach (var directory in Directory.GetDirectories(work.DirectoryName))
+                    foreach (var directory in Directory.EnumerateDirectories(work.DirectoryName))
                     {
                         readDirectoryWork.Enqueue(new ReadDirectoryWork// more work for us!
                         {
