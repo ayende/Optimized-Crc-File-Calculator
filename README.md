@@ -50,6 +50,10 @@ There are two tasks,and we'll like independent copies of those.
 We expect to get two separate pull requests from you, one for each task. You can try to solve both tasks at once, but it 
 might be easier to solve them independently.
 
+Note that you are free to make _any_ change in the code, including full re-architecturing of the system if you can do better.
+
+Each pull request should include a detail explanation _why_ the changes were made and _how_ the solution work.
+
 ### Task #1 - Proper shutdown
 
 The code currently has no way of shutting down without user involvement (who will notice that there are no more output and hit Enter in the console).
