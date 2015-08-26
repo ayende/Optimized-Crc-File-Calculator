@@ -82,17 +82,27 @@ namespace Optimized.Crc.File.Calculator
                     {
                         var work = readFileWork.Take();
                         var fileInfo = new FileInfo(work.FileName);
-                        // we can allocate a single buffer, _once_!
-                        var buffer = BufferPool.GetBuffer((int) fileInfo.Length);
+                        // some buffers can be very large, we will use consistent 16KB buffers
+						// and if the file is too large, we will use multiple 16KB buffers.
+						// For a file that is 260 KB in size, that means we will use 272 KB only,
+						// versus the 512KB we would use if we used a power of two approach.
+						// So we'll waste only 12KB instead of 252KB
+	                    var buffers = new List<byte[]>();
                         try
                         {
+	                        const int bufferSize = 16*1024;
                             using (var fs = fileInfo.OpenRead())
                             {
-                                // we can't call fs.Read here, it will allocate a 4KB buffer that will then be discarded.
-                                // so we use the native ReadFile method and read directly to our pooled buffer
-                                int read;
-                                if (ReadFile(fs.SafeFileHandle, buffer, (int) fileInfo.Length, out read, IntPtr.Zero) == false)
-                                    throw new Win32Exception();
+	                            for (int j = 0; j < fileInfo.Length; j+=bufferSize)
+	                            {
+									var buffer = BufferPool.GetBuffer(bufferSize);
+									buffers.Add(buffer);
+									// we can't call fs.Read here, it will allocate a 4KB buffer that will then be discarded.
+									// so we use the native ReadFile method and read directly to our pooled buffer
+									int read;
+									if (ReadFile(fs.SafeFileHandle, buffer, buffer.Length, out read, IntPtr.Zero) == false)
+										throw new Win32Exception();
+	                            }
                             }
                         }
                         catch (Exception)
@@ -100,13 +110,16 @@ namespace Optimized.Crc.File.Calculator
                             // If there has ben any error in reading from the file or opening it, we've have
                             // to make sure that we won't forget about this buffer. Even with the error that just
                             // happened, we can still make use of it.
-                            BufferPool.ReturnBuffer(buffer);
+	                        foreach (var buffer in buffers)
+	                        {
+								BufferPool.ReturnBuffer(buffer);
+	                        }
                             throw;
                         }
                         crcComputationWork.Add(new CrcComputationWork
                         {
                             Length = (int) fileInfo.Length,
-                            Buffer = buffer,// the SpinCrcComputations will be returning the bufer to the ppol
+							Buffers = buffers,// the SpinCrcComputations will be returning the bufer to the ppol
                             FileName = work.FileName
                         });
                     }
@@ -135,7 +148,10 @@ namespace Optimized.Crc.File.Calculator
                         finally
                         {
                             // Now it goes back to the pool, and can be used again
-                            BufferPool.ReturnBuffer(work.Buffer);
+	                        foreach (var buffer in work.Buffers)
+	                        {
+								BufferPool.ReturnBuffer(buffer);
+	                        }
                         }
                     }
                 });
@@ -155,22 +171,29 @@ namespace Optimized.Crc.File.Calculator
 
         public class CrcComputationWork
         {
-            public byte[] Buffer;// use byte[] with pool to avoid string allocations
+	        public List<byte[]> Buffers;// use buffers from pool to avoid string allocations
             public int Length;
 
             public string FileName;
             public uint Crc()
             {
                 var crc = 0xFFFFFFFF;
+	            var currentBuffer = Buffers[0];
+	            var bufferOffset = 0;
+	            var bufferIndex = 0;
                 for (var i = 0; i < Length; i++)
                 {
-                    crc = crc ^ Buffer[i];
-                    for (var j = 7; j >= 0; j--)
-                    {
-                        var  mask = (uint)(-(crc & 1));
-                        crc = (crc >> 1) ^ (0xEDB88320 & mask);
-                    }
-                    i = i + 1;
+	                if (i - bufferOffset >= currentBuffer.Length)
+		                currentBuffer = Buffers[++bufferIndex];
+
+					crc = crc ^ currentBuffer[i - bufferOffset];
+					for (var j = 7; j >= 0; j--)
+					{
+						var mask = (uint)(-(crc & 1));
+						crc = (crc >> 1) ^ (0xEDB88320 & mask);
+					}
+					i = i + 1;
+                  
                 }
                 return ~crc;
             }
