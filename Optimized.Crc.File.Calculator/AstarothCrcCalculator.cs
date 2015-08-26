@@ -22,38 +22,39 @@ namespace Optimized.Crc.File.Calculator
             BufferPool.GetBuffer(10000);
             // queues for the various actors
             var crcComputationWork = new BlockingCollection<CrcComputationWork>();
-            var readDirectoryWork = new BlockingCollection<ReadDirectoryWork>();
+            var readDirectoryWork = new Queue<ReadDirectoryWork>();
             var readFileWork = new BlockingCollection<ReadFileWork>();
 
             SpinCrcComputations(crcComputationWork);
 
             SpinFileReaders(readFileWork, crcComputationWork);
 
+			// Start the actors machinery by registering the initial directories
+			foreach (var path in args)
+			{
+				readDirectoryWork.Enqueue(new ReadDirectoryWork
+				{
+					DirectoryName = path
+				});
+			}
+
             SpinDirectoryReader(readDirectoryWork, readFileWork);
 
-            // Start the actors machinery by registering the initial directories
-            foreach (var path in args)
-            {
-                readDirectoryWork.Add(new ReadDirectoryWork
-                {
-                    DirectoryName = path
-                });
-            }
-
+          
             Console.WriteLine("Running computations...");
             Console.ReadLine();
         }
 
-        private static void SpinDirectoryReader(BlockingCollection<ReadDirectoryWork> readDirectoryWork, BlockingCollection<ReadFileWork> readFileWork)
+		private static void SpinDirectoryReader(Queue<ReadDirectoryWork> readDirectoryWork, BlockingCollection<ReadFileWork> readFileWork)
         {
             Task.Factory.StartNew(() =>
             {
-                while (true)
+                while (readDirectoryWork.Count > 0)
                 {
-                    var work = readDirectoryWork.Take();
+                    var work = readDirectoryWork.Dequeue();
                     foreach (var directory in Directory.GetDirectories(work.DirectoryName))
                     {
-                        readDirectoryWork.Add(new ReadDirectoryWork// more work for us!
+                        readDirectoryWork.Enqueue(new ReadDirectoryWork// more work for us!
                         {
                             DirectoryName = directory
                         });
