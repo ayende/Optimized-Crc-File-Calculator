@@ -40,7 +40,7 @@ In order to handle that, we have implemented an multi threaded Actor model:
 Despite our best efforts, this process is still too slow, and uses too much memory.
 A simple way to reproduce this is to run this tool multiple times on the same directory. This will generate large amount of 
 work to be done very easily.
-Here is a sample command to show the issue:
+Here is a sample command to show the issue (processing the same directory multiple times just to have a lot of data to expose the issue):
 
 > Optimized.Crc.File.Calculator.exe d:\ravendb d:\ravendb d:\ravendb d:\ravendb d:\ravendb
 
