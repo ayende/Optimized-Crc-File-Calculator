@@ -178,6 +178,14 @@ namespace Optimized.Crc.File.Calculator
 
         public static class BufferPool
         {
+			// We use a thread local buffer store here, the idea is that we don't want multiple threads
+			// to compete among themselves for the buffers, because we want to achieve the maximum amount
+			// of concurrency possible. A single shared buffer pool would result in us having to do either
+			// costly synchronization or using complex concurrent operations. This is simpler and cheaper.
+			// It also has the advantage of ensuring locality. That is, a buffer that was returned to the pool
+			// will be used in the same thread, and is likely to reside on the same CPU core cache line, ensuring
+			// faster performance.
+			//
             // We use an array of 32 stacks of byte arrays. Each stack in the array correspond
             // to a set of buffers that match that array index by power of two. So the buffers in 
             // index 0 have size of 1, index 1 has size of 2, index 2 has size of 4, index 14
