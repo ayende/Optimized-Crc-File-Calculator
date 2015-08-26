@@ -59,7 +59,7 @@ namespace Optimized.Crc.File.Calculator
                             DirectoryName = directory
                         });
                     }
-                    foreach (var file in Directory.GetFiles(work.DirectoryName, "*.cs"))
+                    foreach (var file in Directory.EnumerateFiles(work.DirectoryName, "*.cs"))
                     {
                         readFileWork.Add(new ReadFileWork// now we can let someone else handle this work
                         {
