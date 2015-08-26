@@ -84,7 +84,7 @@ namespace Optimized.Crc.File.Calculator
                         var fileInfo = new FileInfo(work.FileName);
                         // some buffers can be very large, we will use consistent 16KB buffers
 						// and if the file is too large, we will use multiple 16KB buffers.
-						// For a file that is 260 KB in size, that means we will use 272 KB only,
+						// For a file that is 260 KB (jQuery 1.8.3 is 261.46 KB) in size, that means we will use 272 KB only,
 						// versus the 512KB we would use if we used a power of two approach.
 						// So we'll waste only 12KB instead of 252KB
 	                    var buffers = new List<byte[]>();
